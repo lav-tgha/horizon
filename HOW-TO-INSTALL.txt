@@ -1,0 +1,18 @@
+Three Horizons: install on Android
+
+1. On a computer, sign in to github.com (free account) and create a new public repository, e.g. "horizons".
+   The code holds none of your data; your board lives only on your phone.
+2. In the new repository, click "uploading an existing file" and drag in everything from this folder
+   (including the fonts folder). Commit.
+3. Settings > Pages > Build and deployment > Source: "Deploy from a branch", Branch: main, folder: / (root). Save.
+   After a minute, your app is at https://<your-username>.github.io/horizons/
+4. On your phone, open that address in Chrome, tap the three-dot menu > "Install app" (or "Add to Home screen").
+5. Open the app, tap "Import backup" and choose the three-horizons-backup file.
+   After the first open it works offline.
+
+Live coach (optional): create an API key at console.anthropic.com, set a monthly spend limit there,
+and paste the key under Coach > Claude and backups. Without a key, use "Copy board for Claude"
+and paste into the Claude app.
+
+Updating the app: upload the new files to the same repository. The app picks them up the next time
+it opens with a connection (open it twice to see the change).

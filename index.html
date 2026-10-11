@@ -1,0 +1,1148 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Three Horizons</title>
+<meta name="description" content="Personal dashboard for short-term tasks, habits and long-term projects.">
+<meta name="theme-color" content="#EEF1EB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101412" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@font-face{font-family:"Bricolage Grotesque";src:url(fonts/bricolage-grotesque-latin-wght-normal.woff2) format("woff2");font-weight:200 800;font-style:normal;font-display:swap}
+@font-face{font-family:"IBM Plex Sans";src:url(fonts/ibm-plex-sans-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"IBM Plex Sans";src:url(fonts/ibm-plex-sans-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"IBM Plex Sans";src:url(fonts/ibm-plex-sans-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:"IBM Plex Mono";src:url(fonts/ibm-plex-mono-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:"IBM Plex Mono";src:url(fonts/ibm-plex-mono-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font-size:14px}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: one phone-width column; sticky horizon tabs; each horizon owns a colour (Now amber, Running green, Building blue). */
+:root{
+  --bg:#EEF1EB; --surface:#FBFCF9; --sunk:#E3E8E0; --ink:#18201B; --muted:#5B665E; --line:#D2D9D0;
+  --accent:#2B47C9; --accent-ink:#FFFFFF;
+  --now:#A85C0A; --now-soft:#F5E6D2; --run:#2A7349; --run-soft:#D9ECDF; --build:#2B47C9; --build-soft:#DCE2F9;
+  --warn:#B3261E; --warn-soft:#F7DDDA;
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#101412; --surface:#171C19; --sunk:#1F2622; --ink:#E5EBE6; --muted:#97A29A; --line:#2B3430;
+  --accent:#8198FF; --accent-ink:#0D1230;
+  --now:#E9A452; --now-soft:#3A2A17; --run:#66C48E; --run-soft:#163322; --build:#8198FF; --build-soft:#1D2547;
+  --warn:#FF8B80; --warn-soft:#3C1C19; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#101412; --surface:#171C19; --sunk:#1F2622; --ink:#E5EBE6; --muted:#97A29A; --line:#2B3430;
+  --accent:#8198FF; --accent-ink:#0D1230;
+  --now:#E9A452; --now-soft:#3A2A17; --run:#66C48E; --run-soft:#163322; --build:#8198FF; --build-soft:#1D2547;
+  --warn:#FF8B80; --warn-soft:#3C1C19; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px;padding-block:0 96px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:14px 0;margin-inline:-16px;padding-inline:16px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand h1{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:-.01em;margin:0}
+.brand .date{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.tabs{display:flex;gap:4px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;border:0;background:none;padding:8px 10px 10px;font-weight:600;font-size:14px;color:var(--muted);border-bottom:3px solid transparent;display:flex;align-items:center;gap:6px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--tc,var(--ink))}
+.tab .dot{width:7px;height:7px;border-radius:50%;background:var(--tc,var(--muted))}
+.badge{font-family:var(--f-mono);font-size:11px;background:var(--ink);color:var(--bg);border-radius:9px;padding:0 6px;line-height:17px}
+
+/* type */
+.hhead{display:flex;flex-direction:column;gap:2px;margin-block:22px 14px}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hhead h2{font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1.1;letter-spacing:-.02em;margin:0;text-wrap:balance}
+.hhead p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+h3.sec{font-family:var(--f-display);font-weight:700;font-size:17px;margin:26px 0 10px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+h3.sec .meta{font-family:var(--f-mono);font-size:12px;font-weight:400;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* blocks */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1 1 auto;min-width:0}
+.question{border-left:3px solid var(--accent);padding:2px 0 2px 12px;margin:0;font-family:var(--f-display);font-weight:500;font-size:18px;line-height:1.35;text-wrap:balance}
+.chip{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-mono);font-size:11.5px;padding:1px 7px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip.now{background:var(--now-soft);color:var(--now)}
+.chip.run{background:var(--run-soft);color:var(--run)}
+.chip.build{background:var(--build-soft);color:var(--build)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:16px;color:var(--muted)}
+.empty b{color:var(--ink)}
+
+/* controls */
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:7px 12px;font-weight:500;font-size:14px;line-height:1.3}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:none;border-color:transparent;color:var(--muted);padding-inline:6px}
+.btn.ghost:hover{color:var(--ink)}
+.btn.danger{color:var(--warn)}
+.btn.sm{padding:4px 9px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:none;padding:6px 11px;font-size:13px;font-weight:500;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg.log button[aria-pressed="true"][data-v="full"]{background:var(--run);color:var(--surface)}
+.seg.log button[aria-pressed="true"][data-v="min"]{background:var(--run-soft);color:var(--run)}
+.seg.log button[aria-pressed="true"][data-v="skip"]{background:var(--warn-soft);color:var(--warn)}
+input[type=text],input[type=password],input[type=number],input[type=date],select,textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 10px;font-size:15px}
+textarea{resize:vertical;min-height:64px;line-height:1.45}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+label.f span.h{font-weight:400;color:var(--muted)}
+.capture{display:grid;grid-template-columns:1fr auto auto;gap:8px}
+.capture select{width:auto}
+@media (max-width:420px){.capture{grid-template-columns:1fr auto}.capture select{grid-column:1}}
+
+/* lists */
+.list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.li{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-top:1px solid var(--line)}
+.li:first-child{border-top:0}
+.li .t{font-weight:500}
+.li .sub{font-size:13px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;align-items:center}
+.li.done .t{text-decoration:line-through;color:var(--muted)}
+.tick{flex:0 0 auto;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--muted);background:none;margin-top:1px;display:grid;place-items:center;padding:0}
+.tick.on{background:var(--now);border-color:var(--now)}
+.tick.on::after{content:"";width:6px;height:11px;border:solid var(--surface);border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.star{border:0;background:none;color:var(--line);font-size:18px;line-height:1;padding:2px 4px}
+.star.on{color:var(--now)}
+.coachq{font-size:13px;color:var(--ink);background:var(--sunk);border-radius:8px;padding:6px 9px;margin-top:6px}
+.coachq b{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-right:4px}
+
+/* habit */
+.habit{border-top:4px solid var(--run)}
+.habit h4,.proj h4{margin:0;font-family:var(--f-display);font-weight:700;font-size:18px;line-height:1.2}
+.dots{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:4px}
+.dots i{aspect-ratio:1;border-radius:4px;background:var(--sunk);max-width:100%}
+.dots i.full{background:var(--run)}
+.dots i.min{background:var(--run-soft);box-shadow:inset 0 0 0 1.5px var(--run)}
+.dots i.skip{background:var(--warn-soft)}
+.dots i.today{outline:1.5px solid var(--ink);outline-offset:1px}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13.5px;margin:0}
+.dl dt{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+.dl dd{margin:0;min-width:0}
+.banner{font-size:13.5px;border-radius:8px;padding:8px 10px;background:var(--run-soft);color:var(--ink)}
+.banner.warn{background:var(--warn-soft)}
+.cap{font-family:var(--f-mono);font-size:12px;display:inline-flex;gap:3px;align-items:center}
+.cap i{width:16px;height:6px;border-radius:3px;background:var(--line)}
+.cap i.on{background:var(--tc)}
+
+/* project */
+.proj{border-top:4px solid var(--build)}
+.nextbox{background:var(--build-soft);border-radius:10px;padding:10px 12px}
+.nextbox .eyebrow{color:var(--build)}
+.nextbox .t{font-weight:600;font-size:15.5px}
+.notes{font-size:13px;display:flex;flex-direction:column;gap:3px;margin:0;padding:0;list-style:none}
+.notes li{display:flex;gap:8px}
+.notes .mono{color:var(--muted);flex:0 0 auto;font-size:11.5px;padding-top:2px}
+
+/* sections */
+details.fold{margin-top:12px}
+details.fold summary{cursor:pointer;color:var(--muted);font-size:13.5px;font-weight:500;list-style:none}
+details.fold summary::-webkit-details-marker{display:none}
+details.fold summary::before{content:"+ "}
+details.fold[open] summary::before{content:"− "}
+details.fold>div{margin-top:8px}
+
+/* coach */
+.chat{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;padding:9px 12px;border-radius:12px;font-size:14.5px;line-height:1.5;overflow-wrap:anywhere}
+.msg.u{align-self:flex-end;background:var(--ink);color:var(--bg);border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg p{margin:0 0 6px}.msg p:last-child{margin:0}
+.msg ul{margin:4px 0 6px;padding-left:18px}
+.quick{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.quick button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--ink)}
+.coach-out{white-space:normal;font-size:14.5px}
+.coach-out p{margin:0 0 8px}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgb(10 14 12 / .45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:720px;max-height:92%;overflow-y:auto;border-radius:16px 16px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (min-width:760px){.scrim{align-items:center}.sheet{border-radius:16px;max-height:88%}}
+.sheet h3{font-family:var(--f-display);font-weight:800;font-size:22px;margin:0}
+.verdict{border-radius:10px;padding:12px;background:var(--surface);border:1px solid var(--line)}
+.verdict .v{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.v.commit{color:var(--run)}.v.shrink{color:var(--now)}.v.park{color:var(--build)}.v.drop{color:var(--warn)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;font-size:14px;z-index:30;max-width:calc(100% - 32px)}
+.stat{display:flex;gap:16px;flex-wrap:wrap}
+.stat div{display:flex;flex-direction:column}
+.stat b{font-family:var(--f-display);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(16px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><h1>Three Horizons</h1><span class="date mono" id="dateLbl"></span></div>
+    <nav class="tabs" id="tabs" role="tablist"></nav>
+  </header>
+  <main id="view"></main>
+</div>
+<div id="sheetRoot"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+(() => {
+"use strict";
+const AREAS = ["Career","Home","Health","Business","Money","Family","Life"];
+const QUESTIONS = [
+  "What did you avoid yesterday, and what is the smallest version of it?",
+  "Which goal on here is someone else's want, not yours?",
+  "If you could only move one thing today, which would it be?",
+  "What would make today's minimum embarrassingly easy?",
+  "What are you about to add that you should park instead?",
+  "Where did your energy go up yesterday, and where did it drop?",
+  "Who is the next person to speak to about the exit?",
+  "What in your environment is making the bad habit easy?",
+  "If this week goes badly, what is the one thing you still do?",
+  "What have you planned beautifully but not started?",
+  "Is anything on your buy list really a mood purchase?",
+  "What would you at 40 thank you for doing this week?",
+  "Which decision are you delaying that needs only twenty minutes?",
+  "Which commitment is quietly making the others fail?"
+];
+const QUICK = [
+  "Help me pick my two live habits.",
+  "Am I over-committed? What should I park?",
+  "Interrogate my newest proposed goal.",
+  "What am I avoiding right now?",
+  "Turn the career exit into one action for this week."
+];
+const TABS = [["today","Today",""],["now","Now","var(--now)"],["running","Running","var(--run)"],["building","Building","var(--build)"],["coach","Coach","var(--accent)"]];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => dkey(new Date());
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const dayDiff = (a,b) => Math.round((new Date(b+"T12:00")-new Date(a+"T12:00"))/864e5);
+const nowIso = () => new Date().toISOString();
+const fmtDay = k => { if(!k) return ""; const d=new Date(k+"T12:00"); return d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"}); };
+const longDate = d => d.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+const weekStart = (d=new Date()) => { const x=new Date(d); x.setDate(x.getDate()-((x.getDay()+6)%7)); return dkey(x); };
+const money = n => "£"+Number(n||0).toLocaleString("en-GB",{maximumFractionDigits:0});
+const store = { get(k){try{return localStorage.getItem(k)}catch{return null}}, set(k,v){try{localStorage.setItem(k,v)}catch{}} };
+
+const S = {
+  tab: ["today","now","running","building","coach"].includes(store.get("tab")) ? store.get("tab") : "today",
+  items: [], chat: [], chatLocal: null, streaming: "", reviews: [],
+  settings: {habitCap:2, projectCap:3, exitTarget:null}, profile: "",
+  loaded:false, dbState:"connecting", sample:null, sampleOff:false,
+  coachBusy:false, nowFilter:"all", bulkOpen:false, nxOpen:null, reviewOut:"", reviewBusy:false, busy:{}
+};
+let DB = null, chatCtl = null;
+let SH = null; // sheet state
+
+/* ---------- helpers ---------- */
+const byKind = (k, st) => S.items.filter(i => i.kind===k && (!st || (Array.isArray(st)?st.includes(i.status):i.status===st)));
+const live = k => byKind(k,"active");
+const capOf = k => k==="habit" ? (S.settings.habitCap||2) : (S.settings.projectCap||3);
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2600); }
+function dbErr(e){ const c=e&&e.code; if(c==="quota_exceeded") return "Storage is full. Delete some done items."; if(c==="revoked"||c==="not_granted") return "Saving is unavailable in this view."; return "Couldn't save. Try again."; }
+function sErr(e){
+  const c=e&&e.code;
+  if(c==="not_configured") return "Add your Claude API key under Coach to use this.";
+  if(c==="bad_key") return "Claude rejected the API key. Check it under Coach.";
+  if(c==="offline") return "You're offline. The coach needs a connection; everything else works.";
+  if(c==="overloaded") return "Claude is busy right now. Try again shortly.";
+  if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(c)){ S.sampleOff=true; return "The coach is unavailable."; }
+  if(c==="rate_limited") return "The coach is busy. Try again in a minute.";
+  if(c==="cancelled") return "";
+  if(c==="invalid_json") return "The coach replied in the wrong shape. Try again.";
+  if(c==="refused") return "The coach declined that one. Rephrase and try again.";
+  return "The coach couldn't answer just now. Try again.";
+}
+const coachReady = () => !!S.sample && !!getKey();
+
+async function upd(id, data){ if(!DB) return toast("Not connected yet."); try{ await DB.collection("items").doc(id).update({...data, updated:nowIso()}); }catch(e){ toast(dbErr(e)); } }
+async function addItem(data){ if(!DB) return toast("Not connected yet."); const t=nowIso(); try{ return await DB.collection("items").add({created:t, updated:t, ...data}); }catch(e){ toast(dbErr(e)); } }
+async function delItem(id){ if(!DB) return; try{ await DB.collection("items").doc(id).delete(); }catch(e){ toast(dbErr(e)); } }
+
+function fmtText(t){
+  const lines = esc(t).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").split(/\n/);
+  let out="", inList=false;
+  for(const raw of lines){
+    const l=raw.trim();
+    const m=l.match(/^([-•*]|\d+[.)])\s+(.*)$/);
+    if(m){ if(!inList){out+="<ul>";inList=true;} out+=`<li>${m[2]}</li>`; continue; }
+    if(inList){out+="</ul>";inList=false;}
+    if(l) out+=`<p>${l.replace(/^#+\s*/,"")}</p>`;
+  }
+  if(inList) out+="</ul>";
+  return out;
+}
+
+/* ---------- habit maths ---------- */
+function lastDone(h){ const log=h.log||{}; for(let i=0;i<180;i++){ const k=dkey(addDays(new Date(),-i)); if(log[k]==="full"||log[k]==="min") return i; } return null; }
+function weekCount(h){ const log=h.log||{}, ws=weekStart(); return Object.entries(log).filter(([k,v])=>k>=ws&&(v==="full"||v==="min")).length; }
+function recentCount(h,n=14){ const log=h.log||{}; let c=0; for(let i=0;i<n;i++){ const v=log[dkey(addDays(new Date(),-i))]; if(v==="full"||v==="min") c++; } return c; }
+function eventCounts(h,n=30){ const log=h.log||{}; let held=0,over=0; for(let i=0;i<n;i++){ const v=log[dkey(addDays(new Date(),-i))]; if(v==="full"||v==="min") held++; else if(v==="skip") over++; } return {held,over}; }
+function progressText(h){
+  if(h.cadence==="event"){ const {held,over}=eventCounts(h); return held+over?`Held ${held} of ${held+over} events in the last 30 days`:"Log it after each event"; }
+  return h.cadence==="weekly"?`${weekCount(h)} of ${h.perWeek||3} this week`:`${recentCount(h)} of last 14 days`;
+}
+function habitBanner(h){
+  if(h.cadence==="event") return "";
+  const log=h.log||{}, t=log[today()], gap=lastDone(h);
+  if(t==="full"||t==="min") return "";
+  const minTxt = h.minimum ? ` Minimum: ${esc(h.minimum)}` : "";
+  if(gap===null) return `<div class="banner">Not started yet. Do the minimum today.${minTxt}</div>`;
+  if(h.cadence==="weekly"){
+    const need=(h.perWeek||3)-weekCount(h), left=7-((new Date().getDay()+6)%7);
+    if(need>left) return `<div class="banner warn">Off pace this week (${need} to go, ${left} days left). A minimum still counts.</div>`;
+    if(gap>=7) return `<div class="banner warn">${gap} days since the last one. Restart rule: no backlog, just today.${minTxt}</div>`;
+    return "";
+  }
+  if(gap>=7) return `<div class="banner warn">${gap} days since the last one. Restart rule: no backlog, just today.${minTxt}</div>`;
+  if(gap>=2) return `<div class="banner warn">Yesterday was a miss. Never miss twice.${minTxt}</div>`;
+  return "";
+}
+function dots(h){
+  const log=h.log||{}; let s="";
+  for(let i=13;i>=0;i--){ const k=dkey(addDays(new Date(),-i)); const v=log[k]||""; s+=`<i class="${v} ${i===0?"today":""}" title="${fmtDay(k)}: ${v==="full"?"done":v==="min"?"minimum":v==="skip"?"missed":"no entry"}"></i>`; }
+  return `<div class="dots" aria-label="Last 14 days">${s}</div>`;
+}
+function logSeg(h){
+  const v=(h.log||{})[today()]||"";
+  const b=(val,lab)=>`<button data-act="log" data-id="${h.id}" data-v="${val}" aria-pressed="${v===val}">${lab}</button>`;
+  if(h.cadence==="event") return `<div class="seg log" role="group" aria-label="Log today's event">${b("full","Held my limit")}${b("skip","Went over")}</div>`;
+  return `<div class="seg log" role="group" aria-label="Log today">${b("full","Done")}${b("min","Minimum")}${b("skip","Missed")}</div>`;
+}
+
+/* ---------- context for the coach ---------- */
+function contextText(){
+  const L=[];
+  L.push("Today: "+longDate(new Date()));
+  if(S.profile) L.push("ABOUT ROB (his own brief):\n"+S.profile.slice(0,5000));
+  if(S.settings.exitTarget) L.push("Target banking exit date: "+S.settings.exitTarget);
+  L.push(`Caps: at most ${capOf("habit")} live habits and ${capOf("project")} active long-term projects.`);
+  const hab = st => byKind("habit",st);
+  const habLine = h => { const log=h.log||{}; let s=""; for(let i=13;i>=0;i--){ const v=log[dkey(addDays(new Date(),-i))]; s+= v==="full"?"F":v==="min"?"m":v==="skip"?"x":"."; } return `- ${h.title} [${h.area||""}] cadence ${h.cadence==="weekly"?(h.perWeek||3)+"/week":h.cadence==="event"?"per social event (F = held the limit, x = went over)":"daily"}; minimum: ${h.minimum||"—"}; trigger: ${h.anchor||"—"}; last 14 days (oldest→today, F done, m minimum, x missed, . no entry): ${s}`; };
+  L.push("LIVE HABITS:\n"+(hab("active").map(habLine).join("\n")||"(none)"));
+  L.push("PROPOSED HABITS (not yet through the gate):\n"+(hab("proposed").map(h=>`- ${h.title}: ${h.why||""}`).join("\n")||"(none)"));
+  L.push("PARKED HABITS: "+(hab("parked").map(h=>h.title).join("; ")||"none"));
+  const pr = st => byKind("project",st);
+  L.push("ACTIVE PROJECTS:\n"+(pr("active").map(p=>`- ${p.title} [${p.area||""}] why: ${p.why||"—"}; done looks like: ${p.outcome||"—"}; 90-day milestone: ${p.milestone||"—"}; next action: ${p.next||"—"} (set ${p.nextUpdated||"?"}); review ${p.review||"—"}; notes: ${(p.notes||[]).slice(-3).map(n=>n.d+" "+n.t).join(" | ")}`).join("\n")||"(none)"));
+  L.push("PROPOSED PROJECTS:\n"+(pr("proposed").map(p=>`- ${p.title}: ${p.why||""}`).join("\n")||"(none)"));
+  L.push("PARKED PROJECTS: "+(pr("parked").map(p=>p.title).join("; ")||"none"));
+  const nows = byKind("now","active");
+  L.push("SHORT-TERM (Now):\n"+(nows.slice(0,30).map(n=>`- ${n.isBuy?"[buy] ":""}${n.title}${n.price?" ~"+money(n.price):""}${n.due?" due "+n.due:""}`).join("\n")||"(none)"));
+  const inbox = byKind("inbox");
+  if(inbox.length) L.push("UNSORTED INBOX:\n"+inbox.map(i=>"- "+i.title).join("\n"));
+  if(S.reviews[0]) L.push(`LAST WEEKLY REVIEW (${S.reviews[0].week}): wins: ${S.reviews[0].wins||""}; slipped: ${S.reviews[0].slip||""}; change: ${S.reviews[0].change||""}`);
+  return L.join("\n\n");
+}
+const RULES = `You are Rob's coach and counsellor inside his "Three Horizons" dashboard. Now = short-term tasks and purchases. Running = ongoing habits and systems. Building = long-term projects (career, house, business, sabbatical and so on).
+Your job: help him keep discovering what he actually wants, interrogate goals hard before they go on the board, and turn intentions into small systems that survive interruptions.
+How to behave:
+- Direct and honest. Challenge rather than validate. No flattery, no cheerleading.
+- When exploring, ask one sharp question at a time.
+- Before endorsing a new goal, test it: is it his own want or a reaction to something? What does it displace? What is the minimum version that survives his worst week? What is the trigger, and the restart rule after a miss?
+- Hold the caps (live habits and active projects). If he is over-committed, name what to park.
+- Prefer environment design and triggers over willpower. Tiny minimums. No backlog after missed days.
+- Use the dashboard data below as evidence; point to patterns in it.
+- Keep replies phone-sized: under about 150 words unless he asks for depth. British English. Plain text; a short list is fine.
+- You cannot change the dashboard yourself; tell him exactly what to change.`;
+
+/* ---------- views ---------- */
+function hhead(eyebrow, title, sub){ return `<div class="hhead"><span class="eyebrow">${eyebrow}</span><h2>${title}</h2>${sub?`<p>${sub}</p>`:""}</div>`; }
+function capMeter(k){ const n=live(k).length, c=capOf(k), col=k==="habit"?"var(--run)":"var(--build)"; let s=""; for(let i=0;i<c;i++) s+=`<i class="${i<n?"on":""}"></i>`; return `<span class="cap" style="--tc:${col}" title="${n} of ${c} slots used">${s}<span class="muted">&nbsp;${n}/${c}</span></span>`; }
+function areaChip(a,cls=""){ return a?`<span class="chip ${cls}">${esc(a)}</span>`:""; }
+function notConnected(){
+  if(S.dbState==="off") return `<div class="empty"><b>Saving isn't available in this view.</b> Open this page in the Claude app while signed in to use the dashboard.</div>`;
+  if(!S.loaded) return `<div class="empty">Loading your board…</div>`;
+  return "";
+}
+
+function viewToday(){
+  const nc=notConnected()||welcomeCard(); const d=new Date();
+  const doy=Math.floor((d-new Date(d.getFullYear(),0,0))/864e5);
+  const q=QUESTIONS[doy%QUESTIONS.length];
+  let runway="";
+  if(S.settings.exitTarget){ const days=dayDiff(today(),S.settings.exitTarget); runway=`<span class="chip build">Exit window · ${Math.max(0,Math.round(days/30.44))} months</span>`; }
+  const habits=live("habit"), projects=live("project");
+  const proposedH=byKind("habit","proposed").length, proposedP=byKind("project","proposed").length;
+  const todayItems=byKind("now","active").filter(n=>n.today||(n.due&&n.due<=today()));
+  const inbox=byKind("inbox");
+  const sunday=d.getDay()===0;
+  return `
+  ${hhead(esc(longDate(d)),"Today","")}
+  <div class="stack">
+    <p class="question">${esc(q)}</p>
+    <div class="row">${runway}${backupChip()}${sunday?`<button class="chip warn" data-act="tab" data-v="coach" style="border:0">Sunday · weekly review due</button>`:""}</div>
+  </div>
+  ${nc?`<div style="margin-top:16px">${nc}</div>`:`
+  <h3 class="sec">Capture</h3>
+  <form class="capture" data-form="capture">
+    <input type="text" id="cap" placeholder="Anything on your mind…" autocomplete="off" aria-label="Capture">
+    <select id="capKind" aria-label="Where it goes"><option value="inbox">Inbox</option><option value="now">Now · do</option><option value="buy">Now · buy</option></select>
+    <button class="btn primary" type="submit">Add</button>
+  </form>
+  <div class="row" style="margin-top:6px"><button class="btn ghost sm" data-act="bulk-toggle">${S.bulkOpen?"Close":"Paste a batch of phone notes"}</button></div>
+  ${S.bulkOpen?`<div class="card stack" style="margin-top:6px"><label class="f" for="bulk">One item per line<span class="h">Each line lands in the inbox. Then sort them with the coach or by hand.</span></label><textarea id="bulk" rows="7" placeholder="Paste your notes here"></textarea><div class="row"><button class="btn primary" data-act="bulk-add">Add to inbox</button></div></div>`:""}
+
+  ${inbox.length?`
+  <h3 class="sec">Inbox <span class="meta">${inbox.length} unsorted</span></h3>
+  <div class="list">${inbox.map(i=>`
+    <div class="li"><div class="grow"><div class="t">${esc(i.title)}</div>
+      ${i.coachQ?`<div class="coachq"><b>${i.suggest==="drop"?"Duplicate?":"Ask yourself"}</b>${esc(i.coachQ)}</div>`:""}
+      <div class="row" style="margin-top:8px">
+        <button class="btn sm" data-act="inbox-now" data-id="${i.id}">→ Now</button>
+        <button class="btn sm" data-act="gate" data-id="${i.id}">Run the gate</button>
+        <button class="btn ghost sm" data-act="drop" data-id="${i.id}">Drop</button>
+      </div></div></div>`).join("")}
+  </div>
+  ${coachReady()?`<div class="row" style="margin-top:8px"><button class="btn" data-act="sort-inbox" ${S.busy.sort?"disabled":""}>${S.busy.sort?"Sorting…":"Sort the inbox with the coach"}</button><span class="small muted">Small things go to Now. Habits and projects become proposals that still need the gate.</span></div>`:""}`:""}
+
+  <h3 class="sec">Check in <span class="meta">${capMeter("habit")}</span></h3>
+  ${habits.length?`<div class="stack">${habits.map(h=>`
+    <div class="card stack">
+      <div class="row"><div class="grow"><b>${esc(h.title)}</b><div class="small muted">${progressText(h)} · minimum: ${esc(h.minimum||"—")}</div></div></div>
+      ${logSeg(h)}${habitBanner(h)}
+    </div>`).join("")}</div>`
+  :`<div class="empty"><b>No live habits yet.</b> You have ${proposedH} proposed in Running. Pick at most ${capOf("habit")} and put each through the gate. Fewer that survive beat many that lapse. <div class="row" style="margin-top:8px"><button class="btn sm" data-act="tab" data-v="running">Go to Running</button></div></div>`}
+
+  <h3 class="sec">Next moves <span class="meta">${capMeter("project")}</span></h3>
+  ${projects.length?`<div class="list">${projects.map(p=>`
+    <div class="li"><div class="grow"><div class="small muted">${esc(p.title)}</div><div class="t">${esc(p.next||"No next action set")}</div></div>
+    <button class="btn sm" data-act="nx-open" data-id="${p.id}" data-tab="building">Done</button></div>`).join("")}</div>`
+  :`<div class="empty"><b>No active projects.</b> ${proposedP} proposed in Building.</div>`}
+
+  <h3 class="sec">On today</h3>
+  ${todayItems.length?`<div class="list">${todayItems.map(nowRow).join("")}</div>`:`<div class="empty">Nothing starred for today. Star up to three things in Now.</div>`}
+  `}`;
+}
+
+function buyState(n){
+  const start=(n.created||nowIso()).slice(0,10); const ready=dkey(addDays(new Date(start+"T12:00"),3));
+  return {ready: today()>=ready, readyOn: ready};
+}
+function nowRow(n){
+  const done=n.status==="done";
+  let sub=[];
+  if(n.area) sub.push(areaChip(n.area,"now"));
+  if(n.isBuy){ sub.push(`<span class="chip">buy${n.price?` · ${money(n.price)}`:""}</span>`);
+    if(!done){ const b=buyState(n); sub.push(b.ready?`<span class="chip now">Ready to decide</span>`:`<span class="chip">Cooling off until ${fmtDay(b.readyOn)}</span>`); }
+    else sub.push(`<span class="chip">${n.outcome==="skipped"?"skipped":"bought"}</span>`);
+  }
+  if(n.due&&!done) sub.push(`<span class="chip ${n.due<today()?"warn":n.due===today()?"now":""}">${n.due<today()?"overdue · ":"due "}${fmtDay(n.due)}</span>`);
+  let actions="";
+  if(n.isBuy&&!done){ const b=buyState(n);
+    actions=`<div class="row" style="margin-top:8px">${b.ready?`<button class="btn sm" data-act="buy-yes" data-id="${n.id}">Bought it</button><button class="btn sm" data-act="buy-no" data-id="${n.id}">Skip it</button>`:""}${coachReady()?`<button class="btn ghost sm" data-act="buy-challenge" data-id="${n.id}" ${S.busy["c"+n.id]?"disabled":""}>${S.busy["c"+n.id]?"Thinking…":"Challenge this buy"}</button>`:""}</div>`;
+  }
+  return `<div class="li ${done?"done":""}">
+    ${n.isBuy&&!done?`<span style="width:22px;flex:0 0 auto"></span>`:`<button class="tick ${done?"on":""}" data-act="now-done" data-id="${n.id}" aria-label="${done?"Mark not done":"Mark done"}"></button>`}
+    <div class="grow"><div class="t">${esc(n.title)}</div>${sub.length?`<div class="sub">${sub.join("")}</div>`:""}
+      ${n.coachQ&&!done?`<div class="coachq"><b>Coach</b>${esc(n.coachQ)}</div>`:""}${actions}</div>
+    ${done?"":`<button class="star ${n.today?"on":""}" data-act="now-star" data-id="${n.id}" aria-label="${n.today?"Unstar":"Star for today"}">★</button>`}
+    <button class="btn ghost sm" data-act="edit" data-id="${n.id}" aria-label="Edit">Edit</button>
+  </div>`;
+}
+
+function viewNow(){
+  const nc=notConnected(); if(nc) return hhead("Horizon 1 · days to weeks","Now","")+nc;
+  const all=byKind("now"); const f=S.nowFilter;
+  const act=all.filter(n=>n.status==="active"&&(f==="all"||(f==="buy"?n.isBuy:!n.isBuy)));
+  const sortK=n=>(n.today?"0":"1")+(n.due||"9999")+(n.created||"");
+  act.sort((a,b)=>sortK(a)<sortK(b)?-1:1);
+  const done=all.filter(n=>n.status==="done").sort((a,b)=>(b.updated||"")>(a.updated||"")?1:-1);
+  const saved=done.filter(n=>n.isBuy&&n.outcome==="skipped").reduce((s,n)=>s+(Number(n.price)||0),0);
+  const skippedN=done.filter(n=>n.isBuy&&n.outcome==="skipped").length;
+  const fb=(v,l)=>`<button data-act="filter" data-v="${v}" aria-pressed="${f===v}">${l}</button>`;
+  return `${hhead("Horizon 1 · days to weeks","Now","Errands, admin and purchases. Buys cool off for three days before you can decide, so mood purchases fall away on their own.")}
+  <form class="card stack" data-form="now-add">
+    <div class="capture"><input type="text" id="nowTitle" placeholder="Add a task or a buy" autocomplete="off" aria-label="New item"><select id="nowType" aria-label="Type"><option value="do">Do</option><option value="buy">Buy</option></select><button class="btn primary" type="submit">Add</button></div>
+    <div class="row"><input type="number" id="nowPrice" placeholder="£ price (buys)" style="max-width:150px" aria-label="Price"><input type="date" id="nowDue" style="max-width:170px" aria-label="Due date"><select id="nowArea" style="max-width:140px" aria-label="Area">${AREAS.map(a=>`<option>${a}</option>`).join("")}</select></div>
+  </form>
+  <div class="row" style="margin-top:14px;justify-content:space-between"><div class="seg">${fb("all","All")}${fb("do","Do")}${fb("buy","Buy")}</div>
+    ${skippedN?`<span class="small muted mono">${skippedN} buys skipped · ${money(saved)} kept</span>`:""}</div>
+  <div style="margin-top:10px">${act.length?`<div class="list">${act.map(nowRow).join("")}</div>`:`<div class="empty">Nothing here. Capture from Today, or add above.</div>`}</div>
+  ${done.length?`<details class="fold"><summary>Done (${done.length})</summary><div class="list">${done.slice(0,20).map(nowRow).join("")}</div></details>`:""}`;
+}
+
+function habitCard(h){
+  return `<div class="card habit stack">
+    <div class="row"><div class="grow"><h4>${esc(h.title)}</h4></div>${areaChip(h.area,"run")}</div>
+    ${dots(h)}
+    <div class="small muted mono">${progressText(h)}${lastDone(h)!==null?` · last ${lastDone(h)===0?"today":lastDone(h)+"d ago"}`:""}</div>
+    <dl class="dl">
+      ${h.why?`<dt>Why</dt><dd>${esc(h.why)}</dd>`:""}
+      <dt>Trigger</dt><dd>${esc(h.anchor||"—")}</dd>
+      <dt>Minimum</dt><dd>${esc(h.minimum||"—")}</dd>
+      <dt>Restart</dt><dd>${esc(h.restart||"Missed days don't need backfilling. Just do today.")}</dd>
+    </dl>
+    ${logSeg(h)}${habitBanner(h)}
+    <div class="row"><button class="btn ghost sm" data-act="edit" data-id="${h.id}">Edit</button><button class="btn ghost sm" data-act="park" data-id="${h.id}">Park</button></div>
+  </div>`;
+}
+function proposalList(items){
+  return `<div class="list">${items.map(i=>`<div class="li"><div class="grow"><div class="t">${esc(i.title)}</div>
+    <div class="sub">${areaChip(i.area)}${i.why?`<span>${esc(i.why)}</span>`:""}</div>
+    ${i.coachQ?`<div class="coachq"><b>Ask yourself</b>${esc(i.coachQ)}</div>`:""}
+    <div class="row" style="margin-top:8px"><button class="btn sm" data-act="gate" data-id="${i.id}">Run the gate</button><button class="btn ghost sm" data-act="park" data-id="${i.id}">Park</button><button class="btn ghost sm" data-act="drop" data-id="${i.id}">Drop</button></div>
+  </div></div>`).join("")}</div>`;
+}
+function parkedFold(items,label){
+  if(!items.length) return "";
+  return `<details class="fold"><summary>${label} (${items.length})</summary><div class="list">${items.map(i=>`<div class="li"><div class="grow"><div class="t">${esc(i.title)}</div><div class="sub">${i.status==="dropped"?"dropped":i.status==="done"?"completed":"parked"} ${i.updated?"· "+fmtDay(i.updated.slice(0,10)):""}</div></div>${i.status!=="done"?`<button class="btn ghost sm" data-act="unpark" data-id="${i.id}">Reconsider</button>`:""}</div>`).join("")}</div></details>`;
+}
+
+function viewRunning(){
+  const nc=notConnected(); if(nc) return hhead("Horizon 2 · ongoing","Running","")+nc;
+  const a=live("habit"), p=byKind("habit","proposed"), parked=byKind("habit",["parked","dropped"]);
+  return `${hhead("Horizon 2 · ongoing","Running",`Systems, not resolutions. At most ${capOf("habit")} live at once. Each one needs a trigger, a minimum that survives your worst week, and a restart rule.`)}
+  <h3 class="sec">Live <span class="meta">${capMeter("habit")}</span></h3>
+  ${a.length?`<div class="stack">${a.map(habitCard).join("")}</div>`:`<div class="empty"><b>Nothing live.</b> Choose from the proposals below. Pick the one that would make the others easier.</div>`}
+  <h3 class="sec">Proposed <span class="meta">${p.length} waiting</span></h3>
+  ${p.length?proposalList(p):`<div class="empty">No proposals.</div>`}
+  <form class="capture" data-form="new-habit" style="margin-top:10px;grid-template-columns:1fr auto"><input type="text" id="newH" placeholder="Propose a habit or system" autocomplete="off" aria-label="New habit"><button class="btn" type="submit">Propose</button></form>
+  ${parkedFold(parked,"Parked and dropped")}`;
+}
+
+function projCard(p){
+  const stale = p.nextUpdated ? dayDiff(p.nextUpdated, today()) : null;
+  const reviewDue = p.review && p.review<=today();
+  return `<div class="card proj stack">
+    <div class="row"><div class="grow"><h4>${esc(p.title)}</h4></div>${areaChip(p.area,"build")}</div>
+    <div class="row">${stale!==null&&stale>14?`<span class="chip warn">Next action stale · ${stale}d</span>`:""}${reviewDue?`<span class="chip warn">Review due</span>`:p.review?`<span class="chip">Review ${fmtDay(p.review)}</span>`:""}</div>
+    <dl class="dl">
+      ${p.why?`<dt>Why</dt><dd>${esc(p.why)}</dd>`:""}
+      ${p.outcome?`<dt>Done is</dt><dd>${esc(p.outcome)}</dd>`:""}
+      ${p.milestone?`<dt>90 days</dt><dd>${esc(p.milestone)}</dd>`:""}
+      ${p.kill?`<dt>Park if</dt><dd>${esc(p.kill)}</dd>`:""}
+    </dl>
+    <div class="nextbox">
+      <div class="eyebrow">Next action${p.nextUpdated?` · set ${fmtDay(p.nextUpdated)}`:""}</div>
+      <div class="t">${esc(p.next||"None set")}</div>
+      ${S.nxOpen===p.id?`<form class="stack" data-form="nx" data-id="${p.id}" style="margin-top:8px">
+        <label class="f" for="nx-${p.id}">What's the next physical action?<span class="h">Small enough to do in one sitting.</span></label>
+        <input type="text" id="nx-${p.id}" autocomplete="off">
+        <input type="text" id="nxn-${p.id}" placeholder="Optional: what happened (goes in the log)" autocomplete="off">
+        <div class="row"><button class="btn primary sm" type="submit">Save</button><button class="btn ghost sm" type="button" data-act="nx-cancel">Cancel</button></div></form>`
+      :`<div class="row" style="margin-top:8px"><button class="btn sm" data-act="nx-open" data-id="${p.id}">Done · set the next one</button></div>`}
+    </div>
+    ${(p.notes||[]).length?`<ul class="notes">${(p.notes||[]).slice(-4).reverse().map(n=>`<li><span class="mono">${fmtDay(n.d)}</span><span>${esc(n.t)}</span></li>`).join("")}</ul>`:""}
+    <form class="row" data-form="note" data-id="${p.id}"><input type="text" id="note-${p.id}" class="grow" style="flex:1 1 160px;width:auto" placeholder="Log a note or decision" autocomplete="off"><button class="btn sm" type="submit">Log</button></form>
+    <div class="row"><button class="btn ghost sm" data-act="edit" data-id="${p.id}">Edit</button><button class="btn ghost sm" data-act="park" data-id="${p.id}">Park</button><button class="btn ghost sm" data-act="complete" data-id="${p.id}">Complete</button></div>
+  </div>`;
+}
+function viewBuilding(){
+  const nc=notConnected(); if(nc) return hhead("Horizon 3 · months to years","Building","")+nc;
+  const a=live("project"), p=byKind("project","proposed"), parked=byKind("project",["parked","dropped","done"]);
+  return `${hhead("Horizon 3 · months to years","Building",`The big moves. At most ${capOf("project")} active. Each carries one next action at all times; a project without one is a wish.`)}
+  <h3 class="sec">Active <span class="meta">${capMeter("project")}</span></h3>
+  ${a.length?`<div class="stack">${a.map(projCard).join("")}</div>`:`<div class="empty"><b>Nothing active.</b> Put a proposal through the gate.</div>`}
+  <h3 class="sec">Proposed <span class="meta">${p.length} waiting</span></h3>
+  ${p.length?proposalList(p):`<div class="empty">No proposals.</div>`}
+  <form class="capture" data-form="new-project" style="margin-top:10px;grid-template-columns:1fr auto"><input type="text" id="newP" placeholder="Propose a long-term project" autocomplete="off" aria-label="New project"><button class="btn" type="submit">Propose</button></form>
+  ${parkedFold(parked,"Parked, dropped and completed")}`;
+}
+
+function viewCoach(){
+  const turns=S.chatLocal||S.chat;
+  const ready=coachReady();
+  const ws=weekStart(); const rev=S.reviews.find(r=>r.week===ws);
+  return `${hhead("Counsel","Coach","Thinks with you, using everything on this board. It will push back before anything new goes on.")}
+  ${!ready?`<div class="empty"><b>The live coach is off.</b> Add a Claude API key below to switch it on, or use “Copy board for Claude” to coach in the Claude app.</div>`:""}
+  ${ready?`
+  <div class="quick" style="margin-top:4px">${QUICK.map((q,i)=>`<button data-act="quick" data-v="${i}" ${S.coachBusy?"disabled":""}>${esc(q)}</button>`).join("")}</div>
+  <div class="chat" style="margin-top:12px">
+    ${turns.length?"":`<div class="empty">Start anywhere. A good first one: “Help me pick my two live habits.”</div>`}
+    ${turns.slice(-24).map(t=>`<div class="msg ${t.role==="user"?"u":"a"}">${t.role==="user"?esc(t.content):fmtText(t.content)}</div>`).join("")}
+    ${S.coachBusy?`<div class="msg a" id="stream">${S.streaming?fmtText(S.streaming):"Thinking…"}</div>`:""}
+  </div>
+  <form class="stack" data-form="coach" style="margin-top:12px">
+    <textarea id="coachIn" rows="3" placeholder="Tell the coach what's on your mind, or a goal you want to add" aria-label="Message the coach"></textarea>
+    <div class="row">${S.coachBusy?`<button class="btn" type="button" data-act="coach-stop">Stop</button>`:`<button class="btn primary" type="submit">Send</button>`}${turns.length&&!S.coachBusy?`<button class="btn ghost sm" type="button" data-act="coach-clear">Clear conversation</button>`:""}</div>
+  </form>`:""}
+
+  ${claudeSection()}
+
+  <h3 class="sec">Weekly review <span class="meta">week of ${fmtDay(ws)}</span></h3>
+  <form class="card stack" data-form="review">
+    <label class="f" for="rWins">What moved this week?<span class="h">Evidence, not feelings.</span></label><textarea id="rWins" rows="2">${esc(rev?.wins||"")}</textarea>
+    <label class="f" for="rSlip">What slipped, and what got in the way?</label><textarea id="rSlip" rows="2">${esc(rev?.slip||"")}</textarea>
+    <label class="f" for="rChange">One change to the system for next week</label><textarea id="rChange" rows="2">${esc(rev?.change||"")}</textarea>
+    <div class="row"><button class="btn" type="submit">Save review</button>${ready?`<button class="btn primary" type="button" data-act="review-run" ${S.reviewBusy?"disabled":""}>${S.reviewBusy?"Reading your week…":"Save and get the coach's read"}</button>`:""}</div>
+    ${(S.reviewBusy||S.reviewOut||rev?.coach)?`<div class="coach-out" id="revOut">${S.reviewOut||rev?.coach?fmtText(S.reviewOut||rev.coach):`<p class="muted">Reading your week…</p>`}</div>`:""}
+  </form>
+  ${S.reviews.filter(r=>r.week!==ws).length?`<details class="fold"><summary>Past reviews</summary><div class="stack">${S.reviews.filter(r=>r.week!==ws).map(r=>`<div class="card small"><div class="eyebrow">Week of ${fmtDay(r.week)}</div><p><b>Moved:</b> ${esc(r.wins||"—")}</p><p><b>Slipped:</b> ${esc(r.slip||"—")}</p><p><b>Change:</b> ${esc(r.change||"—")}</p>${r.coach?`<div class="coach-out muted">${fmtText(r.coach)}</div>`:""}</div>`).join("")}</div></details>`:""}
+
+  <details class="fold"><summary>Coach brief and settings</summary><div class="stack card">
+    <label class="f" for="profile">What the coach knows about you<span class="h">Edit freely. It reads this on every reply.</span></label>
+    <textarea id="profile" rows="10">${esc(S.profile)}</textarea>
+    <div class="row">
+      <label class="f" for="setH" style="flex:1 1 120px">Live habit cap<input type="number" id="setH" min="1" max="5" value="${capOf("habit")}"></label>
+      <label class="f" for="setP" style="flex:1 1 120px">Active project cap<input type="number" id="setP" min="1" max="6" value="${capOf("project")}"></label>
+      <label class="f" for="setX" style="flex:1 1 160px">Exit target date<input type="date" id="setX" value="${esc(S.settings.exitTarget||"")}"></label>
+    </div>
+    <div class="row"><button class="btn primary" data-act="settings-save">Save</button></div>
+  </div></details>
+  `;
+}
+
+const VIEWS={today:viewToday, now:viewNow, running:viewRunning, building:viewBuilding, coach:viewCoach};
+
+function renderTabs(){
+  const inbox=byKind("inbox").length;
+  $("#tabs").innerHTML=TABS.map(([k,l,c])=>`<button class="tab" role="tab" data-act="tab" data-v="${k}" aria-selected="${S.tab===k}" style="${c?`--tc:${c}`:""}">${c?`<span class="dot"></span>`:""}${l}${k==="today"&&inbox?` <span class="badge">${inbox}</span>`:""}</button>`).join("");
+}
+const DIRTY=new Set();
+document.addEventListener("input", ev=>{ if(ev.target.id) DIRTY.add(ev.target.id); });
+function preserve(root, fn){
+  const keep={}; root.querySelectorAll("input[id],textarea[id],select[id]").forEach(el=>{ if(el.type!=="checkbox"&&el.type!=="file"&&el.type!=="password"&&DIRTY.has(el.id)) keep[el.id]=el.value; });
+  const ae=document.activeElement; const act=ae&&root.contains(ae)?ae.id:null; let ss=null,se=null;
+  if(act){ try{ss=ae.selectionStart;se=ae.selectionEnd;}catch{} }
+  fn();
+  for(const [id,v] of Object.entries(keep)){ const el=document.getElementById(id); if(el&&root.contains(el)) el.value=v; }
+  if(act){ const el=document.getElementById(act); if(el){ el.focus({preventScroll:true}); try{ if(ss!==null) el.setSelectionRange(ss,se);}catch{} } }
+}
+function render(){
+  $("#dateLbl").textContent=new Date().toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  renderTabs();
+  const v=$("#view"); preserve(v,()=>{ v.innerHTML=VIEWS[S.tab](); });
+}
+function clearInputs(...ids){ ids.forEach(id=>{ DIRTY.delete(id); const el=document.getElementById(id); if(el) el.value=""; }); }
+function undirty(prefixes){ for(const id of [...DIRTY]) if(prefixes.some(p=>id.startsWith(p))) DIRTY.delete(id); }
+
+/* ---------- the gate (sheet) ---------- */
+function fld(id,label,hint,val,type="textarea",extra=""){
+  const inp = type==="textarea"?`<textarea id="${id}" rows="2" ${extra}>${esc(val)}</textarea>`:type==="select"?extra:`<input type="${type}" id="${id}" value="${esc(val)}" autocomplete="off" ${extra}>`;
+  return `<label class="f" for="${id}">${label}${hint?`<span class="h">${hint}</span>`:""}${inp}</label>`;
+}
+function gateBody(){
+  const it=SH.item, g=it.gate||{}, k=SH.kind;
+  const pick=(a,b,c="")=>a??b??c;
+  const kindSel=`<select id="gKind">${[["now","Now · do"],["buy","Now · buy"],["habit","Running · habit or system"],["project","Building · long-term project"]].map(([v,l])=>`<option value="${v}" ${k===v?"selected":""}>${l}</option>`).join("")}</select>`;
+  const areaSel=`<select id="gArea">${AREAS.map(a=>`<option ${it.area===a?"selected":""}>${a}</option>`).join("")}</select>`;
+  let h=`<div class="row" style="gap:10px"><label class="f grow" for="gKind" style="flex:1 1 200px">Horizon${kindSel}</label><label class="f" for="gArea" style="flex:1 1 120px">Area${areaSel}</label></div>`;
+  h+=fld("gTitle","Title","",it.title,"text");
+  h+=fld("gWhy","Why do I want this?","The real reason, not the respectable one.",pick(g.why,it.why,it.note));
+  h+=fld("gMine","Is this my want, or a reaction?","What triggered it? A bad week, a recruiter call, someone else's expectation?",g.mine||"");
+  if(k==="habit"||k==="project") h+=fld("gCost","What will I stop or park to make room?","",g.cost||"");
+  if(k==="buy"){
+    h+=fld("gReplace","What does it replace, and how often will I use it?","",g.replace||"");
+    h+=`<div class="row">${fld("gPrice","Price (£)","",pick(it.price,g.price,""),"number")}</div>`;
+  }
+  if(k==="habit"){
+    h+=fld("gAnchor","Trigger","After or when ___, I will ___.",pick(it.anchor,g.anchor,""));
+    h+=fld("gMin","Minimum version","Small enough to do ill, hungover or on holiday.",pick(it.minimum,g.minimum,""));
+    h+=fld("gRestart","Restart rule","What happens after a miss?",pick(it.restart,g.restart,"No backlog. Just do today's minimum."));
+    h+=`<div class="row">${fld("gCadence","Cadence","","","select",`<select id="gCadence"><option value="daily" ${it.cadence!=="weekly"?"selected":""}>Daily</option><option value="weekly" ${it.cadence==="weekly"?"selected":""}>Times per week</option><option value="event" ${it.cadence==="event"?"selected":""}>Per event</option></select>`)}${fld("gPerWeek","Times per week","",pick(it.perWeek,g.perWeek,3),"number",'min="1" max="7"')}</div>`;
+  }
+  if(k==="project"){
+    h+=fld("gDone","What does done look like?","Concrete enough that you'd know on the day.",pick(it.outcome,g.done,""));
+    h+=fld("gMilestone","90-day milestone","",pick(it.milestone,g.milestone,""));
+    h+=fld("gKill","I'll park or drop this if…","Decide the exit now, while you're calm.",pick(it.kill,g.kill,""));
+    h+=`<div class="row">${fld("gReview","Next review","",pick(it.review,g.review,""),"date")}</div>`;
+  }
+  h+=fld("gNext","Smallest next action","Under fifteen minutes.",pick(it.next,g.next,""),"text");
+  if(k==="now"||k==="buy") h+=`<div class="row">${fld("gDue","Due (optional)","",it.due||"","date")}</div>`;
+  return h;
+}
+function sheetHTML(){
+  const it=SH.item; const edit=SH.mode==="edit";
+  const v=SH.verdict;
+  const k=SH.kind;
+  const capFull = (k==="habit"||k==="project") && it.status!=="active" && live(k).filter(x=>x.id!==it.id).length>=capOf(k);
+  return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="shT">
+    <div class="row" style="justify-content:space-between"><div><span class="eyebrow">${edit?"Edit":"The gate"}</span><h3 id="shT">${edit?esc(it.title):"Should this go on the board?"}</h3></div><button class="btn ghost" data-act="sheet-close" aria-label="Close">Close</button></div>
+    ${edit?"":`<p class="small muted" style="margin:6px 0 0">Answer honestly. Short answers are fine; blank ones are telling.</p>`}
+    <div class="stack" id="sheetBody" style="margin-top:14px">${gateBody()}</div>
+    ${v?`<div class="verdict stack" style="margin-top:14px"><span class="v ${esc(v.verdict)}">Coach: ${esc(v.verdict||"")}</span><b>${esc(v.headline||"")}</b><div class="small">${esc(v.why||"")}</div>${v.question?`<div class="coachq"><b>Answer this</b>${esc(v.question)}</div>`:""}${v.rewrite&&(v.rewrite.title||v.rewrite.minimum||v.rewrite.next)?`<div class="small muted">Suggested: ${esc([v.rewrite.title,v.rewrite.minimum&&("minimum: "+v.rewrite.minimum),v.rewrite.next&&("next: "+v.rewrite.next)].filter(Boolean).join(" · "))} <button class="btn ghost sm" data-act="g-apply">Use these</button></div>`:""}</div>`:""}
+    ${SH.err?`<div class="banner warn" style="margin-top:10px">${esc(SH.err)}</div>`:""}
+    ${SH.capPick?`<div class="card stack" style="margin-top:14px"><b>You're at ${capOf(k)} ${k==="habit"?"live habits":"active projects"}.</b><span class="small muted">Park one to make room, or save this as a proposal.</span>${live(k).filter(x=>x.id!==it.id).map(x=>`<button class="btn" data-act="g-parkfor" data-id="${x.id}">Park “${esc(x.title)}” and commit</button>`).join("")}</div>`:""}
+    <div class="row" style="margin-top:16px">
+      ${edit?`<button class="btn primary" data-act="e-save">Save</button><button class="btn ghost danger" data-act="e-del">${SH.delArmed?"Tap again to delete":"Delete"}</button>`
+      :`${coachReady()?`<button class="btn" data-act="g-ask" ${SH.busy?"disabled":""}>${SH.busy?"Coach is reading…":"Ask the coach"}</button>`:""}
+        <button class="btn primary" data-act="g-commit">${capFull?"Commit (needs a free slot)":"Commit"}</button>
+        ${(k==="habit"||k==="project")?`<button class="btn" data-act="g-save">Save as proposal</button>`:""}
+        ${(k==="habit"||k==="project")?`<button class="btn ghost" data-act="g-park">Park</button>`:""}<button class="btn ghost danger" data-act="g-drop">Drop</button>`}
+    </div>
+  </div>`;
+}
+function openSheet(id, mode){
+  const it=S.items.find(x=>x.id===id); if(!it) return;
+  const kind = it.kind==="now"?(it.isBuy?"buy":"now"):it.kind==="inbox"?(it.suggest&&it.suggest!=="drop"?it.suggest:"now"):it.kind;
+  undirty(["g"]);
+  SH={id, item:structuredClone(it), mode, kind, verdict:it.gate?.coach||null, busy:false, capPick:false, err:"", delArmed:false};
+  renderSheet(true);
+}
+function renderSheet(first){
+  const root=$("#sheetRoot");
+  if(!SH){ root.innerHTML=""; return; }
+  if(first){ root.innerHTML=`<div class="scrim" data-act="scrim">${sheetHTML()}</div>`; setTimeout(()=>{ const t=root.querySelector("#gWhy"); t&&t.focus({preventScroll:true}); },0); return; }
+  const sc=root.querySelector(".sheet")?.scrollTop||0;
+  preserve(root,()=>{ root.innerHTML=`<div class="scrim" data-act="scrim">${sheetHTML()}</div>`; });
+  const s=root.querySelector(".sheet"); if(s) s.scrollTop=sc;
+}
+function closeSheet(){ SH=null; undirty(["g"]); renderSheet(); }
+function collectGate(){
+  const v=id=>(document.getElementById(id)?.value??"").trim();
+  const a={why:v("gWhy"),mine:v("gMine"),cost:v("gCost"),replace:v("gReplace"),price:v("gPrice"),anchor:v("gAnchor"),minimum:v("gMin"),restart:v("gRestart"),cadence:v("gCadence"),perWeek:v("gPerWeek"),done:v("gDone"),milestone:v("gMilestone"),kill:v("gKill"),review:v("gReview"),next:v("gNext"),due:v("gDue")};
+  return {kind:v("gKind")||SH.kind, title:v("gTitle")||SH.item.title||"Untitled", area:v("gArea"), a};
+}
+function dataFromGate(c,status){
+  const a=c.a;
+  const gate={why:a.why,mine:a.mine,cost:a.cost,replace:a.replace,at:nowIso(),coach:SH.verdict||null};
+  const base={title:c.title, area:c.area, status, gate, coachQ:SH.item.coachQ||""};
+  if(c.kind==="habit") return {...base,kind:"habit",why:a.why,anchor:a.anchor,minimum:a.minimum,restart:a.restart,cadence:a.cadence||"daily",perWeek:Math.max(1,Math.min(7,Number(a.perWeek)||3)),log:SH.item.log||{}};
+  if(c.kind==="project"){ const changed=a.next!==(SH.item.next||""); return {...base,kind:"project",why:a.why,outcome:a.done,milestone:a.milestone,kill:a.kill,review:a.review||"",next:a.next,nextUpdated:changed||!SH.item.nextUpdated?today():SH.item.nextUpdated,notes:SH.item.notes||[]}; }
+  return {...base,kind:"now",isBuy:c.kind==="buy",price:a.price?Number(a.price)||null:(SH.item.price??null),note:a.why,next:a.next,due:a.due||"",today:!!SH.item.today, status: status==="proposed"?"active":status};
+}
+async function gateFinish(status, parkId){
+  const c=collectGate();
+  if(status==="active"&&(c.kind==="habit"||c.kind==="project")&&SH.item.status!=="active"){
+    const others=live(c.kind).filter(x=>x.id!==SH.id);
+    if(others.length>=capOf(c.kind)&&!parkId){ SH.kind=c.kind; SH.capPick=true; renderSheet(); return; }
+  }
+  if(parkId) await upd(parkId,{status:"parked"});
+  const data=dataFromGate(c,status);
+  if(c.kind==="habit"||c.kind==="project"){ if(status==="active"&&SH.item.status!=="active") data.activatedOn=today(); }
+  await upd(SH.id,data);
+  toast(status==="active"?"Committed.":status==="proposed"?"Saved as a proposal.":status==="parked"?"Parked.":"Dropped.");
+  closeSheet();
+}
+async function gateAsk(){
+  if(!coachReady()||SH.busy) return;
+  const c=collectGate(); SH.busy=true; SH.err=""; renderSheet();
+  const kindName={now:"short-term task",buy:"purchase",habit:"ongoing habit/system",project:"long-term project"}[c.kind];
+  const ans=Object.entries(c.a).filter(([k,v])=>v&&!["cadence"].includes(k)).map(([k,v])=>`${k}: ${v}`).join("\n");
+  const prompt=`${RULES}\n\nTASK: Rob wants to add a ${kindName} to his board. Interrogate it before he commits. Weigh it against his current load, his caps and his patterns. Be decisive.\n\nPROPOSAL: "${c.title}" (area: ${c.area})\nHis answers:\n${ans||"(he left the questions blank)"}\n\nCURRENT BOARD:\n${contextText()}\n\nReply with only a JSON object: {"verdict":"commit"|"shrink"|"park"|"drop","headline":"one-line judgement","why":"2-3 sentences of reasoning grounded in his board and answers","question":"the one question he must answer honestly before committing","rewrite":{"title":"sharper title or empty","minimum":"smaller minimum for a habit, else empty","next":"a smaller next action, or empty"}}`;
+  try{
+    const r=await S.sample.json(prompt,{cache:false});
+    if(SH&&SH.id) { SH.verdict=r&&typeof r==="object"?r:null; }
+  }catch(e){ if(SH) SH.err=sErr(e)||""; }
+  if(SH){ SH.busy=false; renderSheet(); }
+}
+
+/* ---------- coach chat ---------- */
+async function coachSend(text){
+  text=(text||"").trim(); if(!text||S.coachBusy||!coachReady()) return;
+  const base=S.chat.slice(-38);
+  const turns=base.concat([{role:"user",content:text,at:nowIso()}]);
+  S.chatLocal=turns; S.coachBusy=true; S.streaming=""; render();
+  chatCtl=new AbortController();
+  let reply="";
+  try{
+    const hist=turns.slice(-16).map(t=>({role:t.role,content:t.content}));
+    while(hist.length&&hist[0].role!=="user") hist.shift();
+    const input=[{role:"user",content:RULES+"\n\nCURRENT BOARD:\n"+contextText()+"\n\n(The conversation follows.)"},...hist];
+    const r=await S.sample(input,{cache:false,signal:chatCtl.signal,onText:({text})=>{ S.streaming=text; const el=document.getElementById("stream"); if(el) el.innerHTML=fmtText(text); }});
+    reply=r.text;
+  }catch(e){ reply=e&&e.text?e.text:""; const m=sErr(e); if(m) toast(m); }
+  const saved=reply?turns.concat([{role:"assistant",content:reply,at:nowIso()}]):turns;
+  try{ await DB.doc("coach/chat").set({turns:saved.slice(-40)}); S.chat=saved.slice(-40); }catch(e){ toast(dbErr(e)); }
+  S.chatLocal=null; S.coachBusy=false; S.streaming=""; render();
+}
+
+async function sortInbox(){
+  const inbox=byKind("inbox"); if(!inbox.length||!coachReady()) return;
+  S.busy.sort=true; render();
+  const prompt=`${RULES}\n\nTASK: Sort Rob's captured notes into his horizons. Short errands and admin are "now"; things to purchase are "buy"; recurring behaviours are "habit"; multi-month efforts are "project". Use "drop" only for clear duplicates of something already on the board.\n\nCURRENT BOARD:\n${contextText()}\n\nNOTES:\n${inbox.map(i=>`${i.id}: ${i.title}`).join("\n")}\n\nReply with only a JSON array, one object per note: {"id":"the id","kind":"now"|"buy"|"habit"|"project"|"drop","area":one of ${JSON.stringify(AREAS)},"title":"cleaned short title","question":"one pointed question he should answer before committing (max 20 words)"}`;
+  try{
+    const arr=await S.sample.json(prompt,{cache:false});
+    const ids=new Set(inbox.map(i=>i.id));
+    const tasks=(Array.isArray(arr)?arr:[]).filter(r=>r&&ids.has(String(r.id))).map(r=>{
+      const kind=String(r.kind), area=AREAS.includes(r.area)?r.area:"Life", title=String(r.title||"").slice(0,140), q=String(r.question||"").slice(0,240);
+      const id=String(r.id); const cur=inbox.find(i=>i.id===id);
+      if(kind==="now"||kind==="buy") return upd(id,{kind:"now",isBuy:kind==="buy",status:"active",area,title:title||cur.title,coachQ:q});
+      if(kind==="habit"||kind==="project") return upd(id,{kind,status:"proposed",area,title:title||cur.title,coachQ:q,why:""});
+      return upd(id,{suggest:"drop",coachQ:q||"Looks like a duplicate."});
+    });
+    await Promise.all(tasks);
+    toast(`Sorted ${tasks.length} item${tasks.length===1?"":"s"}.`);
+  }catch(e){ const m=sErr(e); if(m) toast(m); }
+  S.busy.sort=false; render();
+}
+
+async function buyChallenge(id){
+  const n=S.items.find(x=>x.id===id); if(!n||!coachReady()) return;
+  S.busy["c"+id]=true; render();
+  try{
+    const r=await S.sample(`${RULES}\n\nTASK: Rob is considering buying "${n.title}"${n.price?` for about ${money(n.price)}`:""}. His note: ${n.note||"none"}. In under 50 words, challenge it: one question that exposes whether this is need, upgrade or mood, and a cheaper or slower alternative if one exists. No preamble.\n\nBOARD:\n${contextText()}`,{cache:false});
+    await upd(id,{coachQ:r.text.trim().slice(0,400)});
+  }catch(e){ const m=sErr(e); if(m) toast(m); }
+  delete S.busy["c"+id]; render();
+}
+
+async function saveReview(withCoach){
+  const v=id=>(document.getElementById(id)?.value||"").trim();
+  const ws=weekStart(); const data={week:ws,wins:v("rWins"),slip:v("rSlip"),change:v("rChange"),at:nowIso()};
+  const prev=S.reviews.find(r=>r.week===ws); if(prev?.coach) data.coach=prev.coach;
+  if(withCoach&&coachReady()){
+    S.reviewBusy=true; S.reviewOut=""; render();
+    try{
+      const r=await S.sample(`${RULES}\n\nTASK: Weekly review. Read his week against the board (look at the habit logs and next-action dates) and his answers. Give: one sentence on what the evidence says, the pattern you notice, whether his proposed change is the right lever (or a better one), and what to park or shrink. Under 150 words.\n\nHIS ANSWERS:\nMoved: ${data.wins}\nSlipped: ${data.slip}\nChange: ${data.change}\n\nBOARD:\n${contextText()}`,{cache:false,onText:({text})=>{S.reviewOut=text; const el=document.getElementById("revOut"); if(el) el.innerHTML=fmtText(text);}});
+      data.coach=r.text; S.reviewOut=r.text;
+    }catch(e){ const m=sErr(e); if(m) toast(m); }
+    S.reviewBusy=false;
+  }
+  try{ await DB.collection("reviews").doc(ws).set(data); undirty(["rWins","rSlip","rChange"]); toast("Review saved."); }catch(e){ toast(dbErr(e)); }
+  render();
+}
+
+function backupFromState(){
+  const items={}; for(const it of S.items){ const {id,...rest}=it; items[id]=rest; }
+  const reviews={}; for(const r of S.reviews){ const {id,...rest}=r; reviews[id]=rest; }
+  return {app:"three-horizons",version:1,exported:nowIso(),data:{items,coach:{chat:{turns:S.chat}},meta:{settings:{...S.settings},profile:{text:S.profile}},reviews}};
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", async ev=>{
+  const b=ev.target.closest("[data-act]"); if(!b) return;
+  const act=b.dataset.act, id=b.dataset.id, v=b.dataset.v;
+  if(act==="scrim"){ if(ev.target===b) closeSheet(); return; }
+  if(await offlineAct(act)) return;
+  switch(act){
+    case "tab": S.tab=v; store.set("tab",v); render(); window.scrollTo({top:0}); break;
+    case "bulk-toggle": S.bulkOpen=!S.bulkOpen; render(); break;
+    case "bulk-add": {
+      const lines=(document.getElementById("bulk")?.value||"").split(/\n/).map(l=>l.replace(/^\s*([-•*]|\d+[.)]|\[[ x]\])\s*/i,"").trim()).filter(Boolean);
+      if(!lines.length) return toast("Paste at least one line.");
+      clearInputs("bulk"); S.bulkOpen=false;
+      for(const l of lines.slice(0,60)) await addItem({kind:"inbox",status:"inbox",title:l.slice(0,200)});
+      toast(`${Math.min(lines.length,60)} added to the inbox.`); break;
+    }
+    case "log": { const h=S.items.find(x=>x.id===id); if(!h) return; const cur=(h.log||{})[today()]||""; await upd(id,{log:{[today()]: cur===v?"":v}}); break; }
+    case "gate": openSheet(id,"gate"); break;
+    case "edit": openSheet(id,"edit"); break;
+    case "park": await upd(id,{status:"parked"}); toast("Parked. It's in the fold below."); break;
+    case "drop": await upd(id,{status:"dropped"}); break;
+    case "unpark": { const it=S.items.find(x=>x.id===id); await upd(id,{status: it&&it.kind==="now"?"active":"proposed"}); toast("Back in proposals. Run the gate again."); break; }
+    case "inbox-now": await upd(id,{kind:"now",status:"active",isBuy:false}); toast("Moved to Now."); break;
+    case "sort-inbox": sortInbox(); break;
+    case "now-done": { const n=S.items.find(x=>x.id===id); await upd(id,{status:n.status==="done"?"active":"done",today:false}); break; }
+    case "now-star": { const n=S.items.find(x=>x.id===id); if(!n.today&&byKind("now","active").filter(x=>x.today).length>=3){ toast("Three is the limit for today."); return; } await upd(id,{today:!n.today}); break; }
+    case "buy-yes": await upd(id,{status:"done",outcome:"bought",today:false}); break;
+    case "buy-no": await upd(id,{status:"done",outcome:"skipped",today:false}); toast("Skipped. Money kept."); break;
+    case "buy-challenge": buyChallenge(id); break;
+    case "filter": S.nowFilter=v; render(); break;
+    case "nx-open": if(b.dataset.tab){ S.tab="building"; store.set("tab","building"); } S.nxOpen=id; render(); setTimeout(()=>document.getElementById("nx-"+id)?.focus(),0); break;
+    case "nx-cancel": S.nxOpen=null; render(); break;
+    case "complete": await upd(id,{status:"done"}); toast("Completed. Well done."); break;
+    case "quick": coachSend(QUICK[Number(v)]); break;
+    case "coach-stop": chatCtl?.abort(); break;
+    case "coach-clear": try{ await DB.doc("coach/chat").set({turns:[]}); }catch(e){ toast(dbErr(e)); } break;
+    case "review-run": saveReview(true); break;
+    case "settings-save": {
+      const val=id=>(document.getElementById(id)?.value||"").trim();
+      try{
+        await DB.doc("meta/profile").set({text:val("profile")});
+        await DB.doc("meta/settings").set({habitCap:Math.max(1,Math.min(5,Number(val("setH"))||2)),projectCap:Math.max(1,Math.min(6,Number(val("setP"))||3)),exitTarget:val("setX")||null});
+        undirty(["setH","setP","setX","profile"]); toast("Saved.");
+      }catch(e){ toast(dbErr(e)); }
+      break;
+    }
+    case "artifact-export": {
+      if(!S.downloads) return;
+      try{ await S.downloads.save({filename:`three-horizons-backup-${today()}.json`, data:JSON.stringify(backupFromState(),null,1)}); toast("Backup saved."); }
+      catch(e){ if(e&&e.code!=="declined") toast("Couldn't save the file here."); }
+      break;
+    }
+    case "sheet-close": closeSheet(); break;
+    case "g-ask": gateAsk(); break;
+    case "g-apply": { const r=SH?.verdict?.rewrite||{}; if(r.title){ const el=document.getElementById("gTitle"); if(el) el.value=r.title; } if(r.minimum){ const el=document.getElementById("gMin"); if(el) el.value=r.minimum; } if(r.next){ const el=document.getElementById("gNext"); if(el) el.value=r.next; } toast("Applied. Edit as you like."); break; }
+    case "g-commit": gateFinish("active"); break;
+    case "g-save": gateFinish("proposed"); break;
+    case "g-park": gateFinish("parked"); break;
+    case "g-drop": gateFinish("dropped"); break;
+    case "g-parkfor": gateFinish("active",id); break;
+    case "e-save": gateFinish(SH.item.status==="inbox"?"active":SH.item.status); break;
+    case "e-del": if(!SH.delArmed){ SH.delArmed=true; renderSheet(); } else { await delItem(SH.id); closeSheet(); toast("Deleted."); } break;
+  }
+});
+document.addEventListener("change", ev=>{
+  if(ev.target.id==="gKind"&&SH){ DIRTY.add("gKind"); SH.kind=ev.target.value; SH.capPick=false; renderSheet(); }
+});
+document.addEventListener("keydown", ev=>{ if(ev.key==="Escape"&&SH) closeSheet(); });
+document.addEventListener("submit", async ev=>{
+  ev.preventDefault();
+  const f=ev.target, kind=f.dataset.form, id=f.dataset.id;
+  const val=x=>(document.getElementById(x)?.value||"").trim();
+  if(kind==="capture"){
+    const t=val("cap"), k=val("capKind"); if(!t) return; clearInputs("cap");
+    if(k==="inbox") await addItem({kind:"inbox",status:"inbox",title:t});
+    else await addItem({kind:"now",status:"active",isBuy:k==="buy",title:t,area:"Life"});
+    toast(k==="inbox"?"In the inbox.":"Added to Now.");
+  } else if(kind==="now-add"){
+    const t=val("nowTitle"); if(!t) return;
+    const isBuy=val("nowType")==="buy", price=Number(val("nowPrice"))||null, due=val("nowDue"), area=val("nowArea");
+    clearInputs("nowTitle","nowPrice","nowDue");
+    await addItem({kind:"now",status:"active",isBuy,title:t,price,due,area});
+  } else if(kind==="new-habit"||kind==="new-project"){
+    const t=val(kind==="new-habit"?"newH":"newP"); if(!t) return; clearInputs("newH","newP");
+    const ref=await addItem({kind:kind==="new-habit"?"habit":"project",status:"proposed",title:t,area:kind==="new-habit"?"Health":"Life"});
+    if(ref){ setTimeout(()=>openSheet(ref.id,"gate"),400); }
+  } else if(kind==="nx"){
+    const p=S.items.find(x=>x.id===id); const nx=val("nx-"+id), note=val("nxn-"+id);
+    if(!nx) return toast("Write the next action first.");
+    const notes=(p.notes||[]).slice(-30).concat([{d:today(),t:"Done: "+(p.next||"(previous action)")+(note?" — "+note:"")}]);
+    S.nxOpen=null; await upd(id,{next:nx,nextUpdated:today(),notes});
+  } else if(kind==="note"){
+    const p=S.items.find(x=>x.id===id); const t=val("note-"+id); if(!t) return; clearInputs("note-"+id);
+    await upd(id,{notes:(p.notes||[]).slice(-30).concat([{d:today(),t}])});
+  } else if(kind==="coach"){
+    const t=val("coachIn"); if(!t) return; clearInputs("coachIn"); coachSend(t);
+  } else if(kind==="review"){ saveReview(false); }
+});
+
+/* ---------- offline: local store, Claude API, backups ---------- */
+const KEY_API="th-api-key", KEY_MODEL="th-model", KEY_LASTEXP="th-last-export", KEY_DATA="th-store-v1";
+const MODELS=[["claude-sonnet-5-5","Sonnet 5.5 · balanced"],["claude-opus-5-5","Opus 5.5 · deepest, about twice the cost"],["claude-haiku-5-5","Haiku 5.5 · fastest and cheapest"]];
+const getKey=()=>store.get(KEY_API)||"";
+const getModel=()=>{ const m=store.get(KEY_MODEL); return MODELS.some(x=>x[0]===m)?m:MODELS[0][0]; };
+
+function makeLocalDB(){
+  let data; try{ data=JSON.parse(localStorage.getItem(KEY_DATA)||"{}")||{}; }catch{ data={}; }
+  const subs=new Set();
+  const clone=x=>x===undefined?undefined:JSON.parse(JSON.stringify(x));
+  const isObj=v=>v&&typeof v==="object"&&!Array.isArray(v);
+  const merge=(a,b)=>{ const o={...a}; for(const [k,v] of Object.entries(b)) o[k]=(isObj(v)&&isObj(a[k]))?merge(a[k],v):v; return o; };
+  const coll=p=>data[p]||(data[p]={});
+  const notify=()=>subs.forEach(f=>{ try{ f(); }catch(e){ console.error(e); } });
+  function save(){
+    try{ localStorage.setItem(KEY_DATA,JSON.stringify(data)); }
+    catch(e){ throw {code:"quota_exceeded",message:"Phone storage for this app is full."}; }
+    notify();
+  }
+  const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  const docSnap=(id,d)=>({id,exists:!!d,data:()=>clone(d),metadata:{fromCache:false,hasPendingWrites:false}});
+  function docRef(cp,id){
+    return {
+      id, path:cp+"/"+id,
+      async get(){ return docSnap(id,coll(cp)[id]); },
+      async set(d){ coll(cp)[id]=clone(d); save(); },
+      async update(d){ const c=coll(cp); if(!c[id]) throw {code:"invalid_argument",message:"No such item."}; c[id]=merge(c[id],clone(d)); save(); },
+      async delete(){ delete coll(cp)[id]; save(); },
+      onSnapshot(next){ const f=()=>next(docSnap(id,coll(cp)[id])); subs.add(f); queueMicrotask(f); return ()=>subs.delete(f); },
+    };
+  }
+  function query(cp,ob,lim){
+    const run=()=>{
+      let docs=Object.entries(coll(cp)).map(([id,d])=>docSnap(id,d));
+      if(ob){ const k=ob.f, s=ob.dir==="desc"?-1:1; docs.sort((a,b)=>{ const x=a.data()[k], y=b.data()[k]; return x===y?0:(x===undefined?1:y===undefined?-1:(x<y?-s:s)); }); }
+      else docs.sort((a,b)=>a.id<b.id?-1:1);
+      if(lim) docs=docs.slice(0,lim);
+      return {docs,size:docs.length,empty:!docs.length,docChanges:()=>[],metadata:{fromCache:false,hasPendingWrites:false}};
+    };
+    return {
+      path:cp,
+      orderBy:(f,dir="asc")=>query(cp,{f,dir},lim),
+      limit:n=>query(cp,ob,n),
+      where(){ return this; },
+      async get(){ return run(); },
+      onSnapshot(next){ const f=()=>next(run()); subs.add(f); queueMicrotask(f); return ()=>subs.delete(f); },
+      doc:id=>docRef(cp,id||uid()),
+      async add(d){ const r=docRef(cp,uid()); await r.set(d); return r; },
+    };
+  }
+  return {
+    collection:p=>query(p),
+    doc(p){ const i=p.lastIndexOf("/"); return docRef(p.slice(0,i),p.slice(i+1)); },
+    exportAll:()=>clone(data),
+    importAll(obj){ data=clone(obj)||{}; save(); },
+    isEmpty:()=>!Object.keys(data.items||{}).length&&!(data.meta&&data.meta.profile),
+  };
+}
+
+function makeSample(){
+  function toMessages(input){
+    const turns=typeof input==="string"?[{role:"user",content:input}]:input;
+    const out=[];
+    for(const t of turns){ const c=String(t.content||""); if(!c) continue;
+      if(out.length&&out[out.length-1].role===t.role) out[out.length-1].content+="\n\n"+c; else out.push({role:t.role,content:c}); }
+    while(out.length&&out[0].role!=="user") out.shift();
+    return out;
+  }
+  async function call(input,opts={},wantJson=false){
+    const key=getKey();
+    if(!key) throw {code:"not_configured",message:"No API key."};
+    if(navigator.onLine===false) throw {code:"offline",message:"Offline."};
+    const messages=toMessages(input);
+    if(wantJson&&messages.length) messages[messages.length-1].content+="\n\nReply with only the JSON value. No other text, no code fence.";
+    let res;
+    try{
+      res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:opts.signal,headers:{
+        "content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:getModel(),max_tokens:wantJson?3000:1500,messages})});
+    }catch(e){ if(e&&e.name==="AbortError") throw {code:"cancelled",message:"Stopped."}; throw {code:"offline",message:"Network error."}; }
+    if(!res.ok){
+      let msg=""; try{ msg=(await res.json()).error?.message||""; }catch{}
+      const s=res.status;
+      throw {code:s===401||s===403?"bad_key":s===429?"rate_limited":s===529||s===503?"overloaded":s===400?"invalid_request":"upstream_error",message:msg};
+    }
+    const j=await res.json();
+    const text=(j.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+    if(!text) throw {code:"empty_completion",message:"Empty reply."};
+    if(opts.onText) try{ opts.onText({text,delta:text}); }catch{}
+    return {text,truncated:j.stop_reason==="max_tokens"};
+  }
+  const s=(input,opts)=>call(input,opts||{});
+  s.json=async(input,opts)=>{
+    const {text}=await call(input,opts||{},true);
+    const tries=[text, (text.match(/```(?:json)?\s*([\s\S]*?)```/)||[])[1], (()=>{ const a=text.search(/[\[{]/), b=Math.max(text.lastIndexOf("}"),text.lastIndexOf("]")); return a>=0&&b>a?text.slice(a,b+1):null; })()];
+    for(const t of tries){ if(!t) continue; try{ return JSON.parse(t); }catch{} }
+    throw {code:"invalid_json",message:"Reply was not JSON.",text};
+  };
+  return s;
+}
+
+function buildBackup(){ return {app:"three-horizons",version:1,exported:nowIso(),data:DB.exportAll()}; }
+function backupName(){ return `three-horizons-backup-${today()}.json`; }
+async function exportBackup(){
+  const json=JSON.stringify(buildBackup(),null,1);
+  const name=backupName();
+  let shared=false;
+  try{
+    for(const [type,fname] of [["application/json",name],["text/plain",name.replace(/\.json$/,".txt")]]){
+      const f=new File([json],fname,{type});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){ await navigator.share({files:[f],title:"Three Horizons backup"}); shared=true; break; }
+    }
+  }catch(e){ if(e&&e.name==="AbortError") return; }
+  if(!shared){
+    const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));
+    const a=document.createElement("a"); a.href=url; a.download=name; document.body.append(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+  }
+  store.set(KEY_LASTEXP,today()); toast(shared?"Backup shared.":"Backup saved to Downloads."); render();
+}
+function parseBackup(text){
+  let obj; try{ obj=JSON.parse(text); }catch{
+    const a=text.indexOf("{"), b=text.lastIndexOf("}"); if(a<0||b<=a) return null;
+    try{ obj=JSON.parse(text.slice(a,b+1)); }catch{ return null; } }
+  if(!obj||obj.app!=="three-horizons"||!obj.data||typeof obj.data!=="object") return null;
+  return obj;
+}
+function stageImport(text){
+  const obj=parseBackup(text);
+  if(!obj){ toast("That isn't a Three Horizons backup."); return; }
+  S.pendingImport=obj; S.tab="coach"; store.set("tab","coach"); render();
+  setTimeout(()=>document.getElementById("importCard")?.scrollIntoView({block:"center"}),50);
+}
+function copyText(txt){
+  const fallback=()=>{ S.copyFallback=txt; render(); setTimeout(()=>{ const t=document.getElementById("copyBox"); if(t){ t.focus(); t.select(); } },50); };
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(()=>toast("Copied. Paste it into a Claude chat."),fallback);
+    } else fallback();
+  }catch{ fallback(); }
+}
+function claudeBrief(){
+  return `${RULES}
+
+Below is my current board. Coach me using it. If I ask you to change the board, tell me exactly what to change. If I attach my backup file (JSON with "app":"three-horizons") and ask for changes, give me back the complete updated JSON in the same format so I can import it.
+
+CURRENT BOARD:
+${contextText()}`;
+}
+function backupChip(){
+  const last=store.get(KEY_LASTEXP);
+  if(!DB||!S.loaded||DB.isEmpty()) return "";
+  if(!last||dayDiff(last,today())>7) return `<button class="chip warn" data-act="tab" data-v="coach" style="border:0">${last?"Backup is "+dayDiff(last,today())+" days old":"Not backed up yet"}</button>`;
+  return "";
+}
+function welcomeCard(){
+  if(!S.loaded||!DB||!DB.isEmpty()) return "";
+  return `<div class="card stack" style="margin-top:16px"><b>Welcome. Your board lives on this phone.</b>
+    <span class="small muted">Import the backup file Claude gave you to bring your board across, or start empty and add things as you go.</span>
+    <div class="row"><label class="btn primary" for="importFile">Import backup</label><button class="btn" data-act="start-empty">Start empty</button></div>
+    <input type="file" id="importFile" accept=".json,.txt,application/json,text/plain" hidden></div>`;
+}
+function claudeSection(){
+  const key=getKey(), last=store.get(KEY_LASTEXP), m=getModel();
+  return `
+  <h3 class="sec">Claude and backups</h3>
+  <div class="card stack">
+    <div class="row"><span class="chip ${key?"run":""}">${key?"Live coach on":"Live coach off"}</span><span class="small muted">${key?esc((MODELS.find(x=>x[0]===m)||[])[1]||m):"Needs an API key and a connection"}</span></div>
+    <label class="f" for="apiKey">Claude API key<span class="h">From console.anthropic.com. Stored only on this phone and never included in backups.</span><input type="password" id="apiKey" autocomplete="off" placeholder="${key?"•••• saved (enter a new one to replace)":"sk-ant-…"}"></label>
+    <label class="f" for="apiModel">Model<select id="apiModel">${MODELS.map(([v,l])=>`<option value="${v}" ${m===v?"selected":""}>${l}</option>`).join("")}</select></label>
+    <div class="row"><button class="btn primary" data-act="key-save">Save</button>${key?`<button class="btn ghost danger" data-act="key-clear">Remove key</button>`:""}</div>
+  </div>
+  <div class="card stack" style="margin-top:10px">
+    <b>Use your Claude app instead</b>
+    <span class="small muted">Copies your whole board plus the coaching rules. Paste it into a new Claude chat. No API key or extra cost.</span>
+    <div class="row"><button class="btn" data-act="copy-claude">Copy board for Claude</button></div>
+    ${S.copyFallback?`<label class="f" for="copyBox">Copy this text<span class="h">Your phone blocked automatic copying. Select all and copy.</span><textarea id="copyBox" rows="6" readonly>${esc(S.copyFallback)}</textarea></label><div class="row"><button class="btn ghost sm" data-act="copy-close">Done</button></div>`:""}
+  </div>
+  <div class="card stack" style="margin-top:10px">
+    <b>Backups</b>
+    <span class="small muted">${last?`Last backup: ${fmtDay(last)}.`:"No backup yet."} Your board is stored only on this phone. If you clear Chrome's data or lose the phone, a backup is the only copy. A weekly backup is plenty.</span>
+    <div class="row"><button class="btn" data-act="export">Export backup</button><label class="btn" for="importFile">Import backup</label></div>
+    <input type="file" id="importFile" accept=".json,.txt,application/json,text/plain" hidden>
+    <details class="fold"><summary>Paste a backup instead</summary><div class="stack"><textarea id="pasteBackup" rows="4" placeholder="Paste the JSON Claude gave you"></textarea><div class="row"><button class="btn sm" data-act="paste-import">Load</button></div></div></details>
+    <span class="small muted">To have Claude edit the board: export, attach the file in a Claude chat, ask for changes, then import (or paste) the updated version it gives back.</span>
+    ${S.pendingImport?(()=>{ const d=S.pendingImport.data||{}; const n=Object.keys(d.items||{}).length; return `<div class="banner warn stack" id="importCard"><b>Replace your board with this backup?</b><span>${n} items, saved ${esc(fmtDay(String(S.pendingImport.exported||"").slice(0,10))||"on an unknown date")}. Everything currently on this phone will be replaced.</span><div class="row"><button class="btn primary" data-act="import-confirm">Replace my board</button><button class="btn ghost" data-act="import-cancel">Cancel</button></div></div>`; })():""}
+  </div>`;
+}
+async function offlineAct(act){
+  switch(act){
+    case "export": await exportBackup(); return true;
+    case "copy-claude": copyText(claudeBrief()); return true;
+    case "copy-close": S.copyFallback=""; render(); return true;
+    case "key-save": {
+      const k=(document.getElementById("apiKey")?.value||"").trim(), m=document.getElementById("apiModel")?.value;
+      if(k) store.set(KEY_API,k); if(m) store.set(KEY_MODEL,m);
+      DIRTY.delete("apiKey"); DIRTY.delete("apiModel");
+      const el=document.getElementById("apiKey"); if(el) el.value="";
+      toast(k?"Key saved. The coach is on.":"Saved."); render(); return true;
+    }
+    case "key-clear": try{ localStorage.removeItem(KEY_API); }catch{} toast("Key removed."); render(); return true;
+    case "paste-import": { const t=(document.getElementById("pasteBackup")?.value||"").trim(); if(!t) { toast("Paste the backup text first."); return true; } DIRTY.delete("pasteBackup"); stageImport(t); return true; }
+    case "import-confirm": {
+      const obj=S.pendingImport; if(!obj) return true;
+      try{ DB.importAll(obj.data); S.pendingImport=null; const el=document.getElementById("pasteBackup"); if(el) el.value=""; toast("Board imported."); S.tab="today"; store.set("tab","today"); render(); window.scrollTo({top:0}); }
+      catch(e){ toast(dbErr(e)); }
+      return true;
+    }
+    case "import-cancel": S.pendingImport=null; render(); return true;
+    case "start-empty": await DB.doc("meta/settings").set({habitCap:2,projectCap:3,exitTarget:null}); await DB.doc("meta/profile").set({text:""}); return true;
+  }
+  return false;
+}
+document.addEventListener("change", ev=>{
+  if(ev.target.id!=="importFile") return;
+  const f=ev.target.files&&ev.target.files[0]; DIRTY.delete("importFile");
+  if(!f) return;
+  const r=new FileReader(); r.onload=()=>{ stageImport(String(r.result||"")); ev.target.value=""; }; r.onerror=()=>toast("Couldn't read that file."); r.readAsText(f);
+});
+
+/* ---------- boot ---------- */
+render();
+(()=>{
+  DB=makeLocalDB(); S.dbState="on"; S.sample=makeSample();
+  try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch{}
+  if("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  window.addEventListener("online",()=>render()); window.addEventListener("offline",()=>render());
+  DB.collection("items").onSnapshot(snap=>{ S.items=snap.docs.map(d=>({id:d.id,...d.data()})); S.loaded=true; render(); });
+  DB.doc("coach/chat").onSnapshot(s=>{ S.chat=s.exists?(s.data().turns||[]):[]; if(S.tab==="coach"&&!S.coachBusy) render(); });
+  DB.doc("meta/settings").onSnapshot(s=>{ S.settings=s.exists?{habitCap:2,projectCap:3,exitTarget:null,...s.data()}:{habitCap:2,projectCap:3,exitTarget:null}; render(); });
+  DB.doc("meta/profile").onSnapshot(s=>{ S.profile=s.exists?(s.data().text||""):""; const el=document.getElementById("profile"); if(el&&document.activeElement!==el&&!DIRTY.has("profile")) el.value=S.profile; });
+  DB.collection("reviews").orderBy("week","desc").limit(12).onSnapshot(snap=>{ S.reviews=snap.docs.map(d=>({id:d.id,...d.data()})); if(S.tab==="coach"&&!S.reviewBusy) render(); });
+})();
+})();
+</script>
+</body>
+</html>
